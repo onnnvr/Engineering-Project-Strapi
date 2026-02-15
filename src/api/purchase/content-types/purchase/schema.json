@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "purchases",
+  "info": {
+    "singularName": "purchase",
+    "pluralName": "purchases",
+    "displayName": "Purchase"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "trader": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::trader.trader",
+      "inversedBy": "purchases"
+    },
+    "purchase_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-item.purchase-item",
+      "mappedBy": "purchase"
+    },
+    "totalAmount": {
+      "type": "decimal"
+    },
+    "paid": {
+      "type": "boolean"
+    },
+    "remainingAmount": {
+      "type": "decimal"
+    },
+    "purchaseStatus": {
+      "type": "enumeration",
+      "default": "Delivered",
+      "enum": [
+        "Delivered",
+        "Partially Returned",
+        "Returned"
+      ]
+    },
+    "purchase_payments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-payment.purchase-payment",
+      "mappedBy": "purchase"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "purchases"
+    }
+  }
+}

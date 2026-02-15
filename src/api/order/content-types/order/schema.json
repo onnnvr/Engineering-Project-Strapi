@@ -1,0 +1,83 @@
+{
+  "kind": "collectionType",
+  "collectionName": "orders",
+  "info": {
+    "singularName": "order",
+    "pluralName": "orders",
+    "displayName": "Order"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "order_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::order-item.order-item",
+      "mappedBy": "order"
+    },
+    "customer": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::customer.customer",
+      "inversedBy": "orders"
+    },
+    "subtotal": {
+      "type": "decimal"
+    },
+    "addTaxes": {
+      "type": "boolean",
+      "required": true
+    },
+    "totalAmount": {
+      "type": "decimal"
+    },
+    "taxRate": {
+      "type": "decimal",
+      "default": 0
+    },
+    "taxAmount": {
+      "type": "decimal"
+    },
+    "paid": {
+      "type": "boolean",
+      "required": true,
+      "default": false
+    },
+    "recipient": {
+      "type": "string",
+      "required": true
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "orders"
+    },
+    "payments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::payment.payment",
+      "mappedBy": "order"
+    },
+    "remainingAmount": {
+      "type": "decimal"
+    },
+    "returns": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::return.return",
+      "mappedBy": "order"
+    },
+    "orderStatus": {
+      "type": "enumeration",
+      "default": "Delivered",
+      "enum": [
+        "Delivered",
+        "Partially Returned",
+        "Returned"
+      ]
+    }
+  }
+}

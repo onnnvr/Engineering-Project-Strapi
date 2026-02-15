@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "returns",
+  "info": {
+    "singularName": "return",
+    "pluralName": "returns",
+    "displayName": "Return"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "order": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::order.order",
+      "inversedBy": "returns"
+    },
+    "returned_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::returned-item.returned-item",
+      "mappedBy": "return"
+    },
+    "totalAmount": {
+      "type": "decimal"
+    }
+  }
+}

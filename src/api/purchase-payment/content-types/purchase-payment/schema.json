@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "purchase_payments",
+  "info": {
+    "singularName": "purchase-payment",
+    "pluralName": "purchase-payments",
+    "displayName": "Purchase-payment"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "amount": {
+      "type": "decimal"
+    },
+    "purchase": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::purchase.purchase",
+      "inversedBy": "purchase_payments"
+    },
+    "trader": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::trader.trader",
+      "inversedBy": "purchase_payments"
+    }
+  }
+}

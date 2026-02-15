@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "traders",
+  "info": {
+    "singularName": "trader",
+    "pluralName": "traders",
+    "displayName": "Trader"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "purchases": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase.purchase",
+      "mappedBy": "trader"
+    },
+    "purchase_payments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-payment.purchase-payment",
+      "mappedBy": "trader"
+    },
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "number": {
+      "type": "string"
+    },
+    "totalDebt": {
+      "type": "decimal",
+      "default": 0
+    }
+  }
+}

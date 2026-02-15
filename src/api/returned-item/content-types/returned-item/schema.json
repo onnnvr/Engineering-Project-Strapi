@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "returned_items",
+  "info": {
+    "singularName": "returned-item",
+    "pluralName": "returned-items",
+    "displayName": "Returned-item"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "product": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::product.product",
+      "inversedBy": "returned_items"
+    },
+    "return": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::return.return",
+      "inversedBy": "returned_items"
+    },
+    "quantity": {
+      "type": "decimal",
+      "required": true
+    },
+    "warehouse": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::warehouse.warehouse",
+      "inversedBy": "returned_items"
+    },
+    "price": {
+      "type": "decimal"
+    },
+    "totalAmount": {
+      "type": "decimal"
+    }
+  }
+}

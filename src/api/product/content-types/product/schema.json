@@ -1,0 +1,101 @@
+{
+  "kind": "collectionType",
+  "collectionName": "products",
+  "info": {
+    "singularName": "product",
+    "pluralName": "products",
+    "displayName": "Product"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": false
+    },
+    "price": {
+      "type": "decimal",
+      "required": true,
+      "default": 0
+    },
+    "categories": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::category.category",
+      "inversedBy": "products"
+    },
+    "slug": {
+      "type": "string",
+      "required": false,
+      "unique": true
+    },
+    "productStatus": {
+      "type": "enumeration",
+      "required": true,
+      "default": "draft",
+      "enum": [
+        "published",
+        "draft"
+      ]
+    },
+    "isTemporary": {
+      "type": "boolean",
+      "required": true,
+      "default": true
+    },
+    "images": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "images",
+        "files"
+      ]
+    },
+    "order_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::order-item.order-item",
+      "mappedBy": "product"
+    },
+    "inventories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::inventory.inventory",
+      "mappedBy": "product"
+    },
+    "barcode": {
+      "type": "uid"
+    },
+    "brand": {
+      "type": "string"
+    },
+    "showOnWebsite": {
+      "type": "boolean",
+      "default": true
+    },
+    "returned_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::returned-item.returned-item",
+      "mappedBy": "product"
+    },
+    "purchase_items": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::purchase-item.purchase-item",
+      "mappedBy": "product"
+    },
+    "pages": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::page.page",
+      "mappedBy": "products"
+    }
+  }
+}

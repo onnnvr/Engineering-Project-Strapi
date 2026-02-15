@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "purchase_items",
+  "info": {
+    "singularName": "purchase-item",
+    "pluralName": "purchase-items",
+    "displayName": "Purchase-item"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "purchase": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::purchase.purchase",
+      "inversedBy": "purchase_items"
+    },
+    "product": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::product.product",
+      "inversedBy": "purchase_items"
+    },
+    "warehouse": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::warehouse.warehouse",
+      "inversedBy": "purchase_items"
+    },
+    "quantity": {
+      "type": "decimal",
+      "required": true
+    },
+    "price": {
+      "type": "decimal",
+      "required": true
+    },
+    "totalAmount": {
+      "type": "decimal"
+    }
+  }
+}
