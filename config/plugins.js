@@ -13,8 +13,6 @@ module.exports = ({ env }) => ({
       },
     },
   },
-
-  // --- إعدادات الإيميل (زي ما هي عندك) ---
   email: {
     config: {
       provider: 'nodemailer',
@@ -33,18 +31,15 @@ module.exports = ({ env }) => ({
       },
     },
   },
-
-  // --- الضربة القاضية لحل مشكلة الـ Redirect بتاع جوجل ---
   'users-permissions': {
     config: {
       grant: {
         google: {
           staticParameters: {
-            // المسار اللي جوجل هيرجع عليه لـ Strapi
-            callback: 'http://localhost:1337/api/connect/google/callback',
+            // ملاحظة: هنا يجب تغيير localhost إلى رابط موقعك على Railway لاحقاً
+            callback: env('STRAPI_URL', 'http://localhost:1337') + '/api/connect/google/callback',
           },
-          // المسار النهائي اللي Strapi هيرميك عليه في الـ React
-          redirectUri: 'http://localhost:3000/connect/google/redirect',
+          redirectUri: env('FRONTEND_URL', 'http://localhost:3000') + '/connect/google/redirect',
         },
       },
     },
