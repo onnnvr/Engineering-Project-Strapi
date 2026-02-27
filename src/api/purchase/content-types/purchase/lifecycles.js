@@ -20,7 +20,6 @@ module.exports = {
     
     await calculatePurchaseTotals(event);
 
-    // --- تعديل المرتجع للمورد: لو الحالة Cancelled أو Returned نصفر المديونية ونعدل المخزن ---
     if (data.status === 'Cancelled' || data.status === 'Returned') {
       data.remainingAmount = 0;
       data.paid = true; 
@@ -37,7 +36,7 @@ module.exports = {
     const { result } = event;
     const ctx = strapi.requestContext.get();
 
-    // زيادة المخزن عند الشراء
+    // زيادة المخزن عند الشراء (ننتظرها لضمان صحة البيانات)
     await addInventoryStock(result);
 
     if (!result.paid && result.totalAmount > 0) {
@@ -45,7 +44,8 @@ module.exports = {
     }
 
     if (result.publishedAt && result.totalAmount > 0) {
-      await sendPurchaseAdminNotification(result, 'فاتورة شراء جديدة (New Purchase)');
+      // 🚀 إرسال بدون await لسرعة الاستجابة
+      sendPurchaseAdminNotification(result, 'فاتورة شراء جديدة (New Purchase)');
       if (ctx) ctx.state.emailSent = true;
     }
   },
@@ -54,7 +54,6 @@ module.exports = {
     const { result } = event;
     const ctx = strapi.requestContext.get();
 
-    // --- لو الحالة بقت مرتجع، نقص اللي دخلناه المخزن تاني ---
     if (result.status === 'Returned' || result.status === 'Cancelled') {
       await handlePurchaseReturnStock(result);
     }
@@ -63,23 +62,27 @@ module.exports = {
 
     if (result.publishedAt && result.totalAmount > 0) {
       if (ctx && !ctx.state.emailSent) {
-        await sendPurchaseAdminNotification(result, 'تحديث فاتورة شراء (Purchase Notification)');
+        // 🚀 إرسال بدون await لسرعة الاستجابة
+        sendPurchaseAdminNotification(result, 'تحديث فاتورة شراء (Purchase Notification)');
         ctx.state.emailSent = true;
       }
     }
   }
 };
 
-// --- دالة معالجة المرتجع للمورد (تنقص المخزن) ---
+// --- تحسين الدوال المساعدة باستخدام Promise.all لسرعة خرافية ---
+
 async function handlePurchaseReturnStock(purchase) {
   try {
     const fullPurchase = await strapi.documents("api::purchase.purchase").findOne({
       documentId: purchase.documentId,
-      populate: ["purchase_items", "purchase_items.product", "purchase_items.warehouse"],
+      populate: ["purchase_items.product", "purchase_items.warehouse"],
     });
 
     const items = fullPurchase?.purchase_items || [];
-    for (const item of items) {
+    
+    // 🚀 تحديث جميع الأصناف بالتوازي
+    await Promise.all(items.map(async (item) => {
       const productId = item.product?.documentId;
       const warehouseId = item.warehouse?.documentId;
 
@@ -95,22 +98,66 @@ async function handlePurchaseReturnStock(purchase) {
         if (stockRecord) {
           const currentQty = Number(stockRecord.quantity || 0);
           const purchaseQty = Number(item.quantity || 0);
-          const newQuantity = Math.max(0, currentQty - purchaseQty); // نقص المخزن لأننا رجعنا البضاعة للمورد
-
-          await strapi.documents("api::inventory.inventory").update({
+          return strapi.documents("api::inventory.inventory").update({
             documentId: stockRecord.documentId,
-            data: { quantity: newQuantity }
+            data: { quantity: Math.max(0, currentQty - purchaseQty) }
           });
-          console.log(`⏪ [RETURNED TO SUPPLIER] Product: ${item.product.title} | New Qty: ${newQuantity}`);
         }
       }
-    }
+    }));
+    console.log(`⏪ [RETURNED TO SUPPLIER] Batch update done for: ${purchase.documentId}`);
   } catch (err) {
     console.error("❌ Purchase Return Stock Error:", err.message);
   }
 }
 
-// --- تحديث مديونية التاجر الكلية ---
+async function addInventoryStock(purchase) {
+  try {
+    const fullPurchase = await strapi.documents("api::purchase.purchase").findOne({
+      documentId: purchase.documentId,
+      populate: ["purchase_items.product", "purchase_items.warehouse"],
+    });
+
+    const items = fullPurchase?.purchase_items || [];
+    
+    // 🚀 تحديث جميع الأصناف بالتوازي
+    await Promise.all(items.map(async (item) => {
+      const productId = item.product?.documentId;
+      const warehouseId = item.warehouse?.documentId;
+
+      if (productId && warehouseId) {
+        const inventoryRecords = await strapi.documents("api::inventory.inventory").findMany({
+          filters: {
+            product: { documentId: productId },
+            warehouse: { documentId: warehouseId }
+          }
+        });
+
+        const stockRecord = inventoryRecords[0];
+        if (stockRecord) {
+          const currentQty = Number(stockRecord.quantity || 0);
+          return strapi.documents("api::inventory.inventory").update({
+            documentId: stockRecord.documentId,
+            data: { quantity: currentQty + Number(item.quantity || 0) }
+          });
+        } else {
+          return strapi.documents("api::inventory.inventory").create({
+            data: {
+              product: { connect: [productId] },
+              warehouse: { connect: [warehouseId] },
+              quantity: Number(item.quantity)
+            }
+          });
+        }
+      }
+    }));
+  } catch (err) {
+    console.error("❌ Stock Update Error:", err.message);
+  }
+}
+
+// --- باقي الدوال (المديونية والحسابات) ---
+
 async function refreshTraderTotalDebt(purchase) {
   try {
     const fullPurchase = await strapi.documents("api::purchase.purchase").findOne({
@@ -139,7 +186,6 @@ async function refreshTraderTotalDebt(purchase) {
   }
 }
 
-// --- تحديث مديونية التاجر عند إنشاء فاتورة ---
 async function updateTraderDebt(purchase) {
   try {
     const fullPurchase = await strapi.documents("api::purchase.purchase").findOne({
@@ -156,9 +202,7 @@ async function updateTraderDebt(purchase) {
       const currentDebt = Number(trader.totalDebt || 0);
       await strapi.documents("api::trader.trader").update({
         documentId: traderDocId,
-        data: {
-          totalDebt: currentDebt + Number(purchase.totalAmount)
-        }
+        data: { totalDebt: currentDebt + Number(purchase.totalAmount) }
       });
     }
   } catch (err) {
@@ -166,54 +210,6 @@ async function updateTraderDebt(purchase) {
   }
 }
 
-// --- زيادة المخزن (عملية الشراء) ---
-async function addInventoryStock(purchase) {
-  try {
-    const fullPurchase = await strapi.documents("api::purchase.purchase").findOne({
-      documentId: purchase.documentId,
-      populate: ["purchase_items", "purchase_items.product", "purchase_items.warehouse"],
-    });
-
-    const items = fullPurchase?.purchase_items || [];
-    for (const item of items) {
-      const productId = item.product?.documentId;
-      const warehouseId = item.warehouse?.documentId;
-
-      if (productId && warehouseId) {
-        const inventoryRecords = await strapi.documents("api::inventory.inventory").findMany({
-          filters: {
-            product: { documentId: productId },
-            warehouse: { documentId: warehouseId }
-          }
-        });
-
-        const stockRecord = inventoryRecords[0];
-        if (stockRecord) {
-          const currentQty = Number(stockRecord.quantity || 0);
-          const purchaseQty = Number(item.quantity || 0);
-          const newQuantity = currentQty + purchaseQty;
-
-          await strapi.documents("api::inventory.inventory").update({
-            documentId: stockRecord.documentId,
-            data: { quantity: newQuantity }
-          });
-        } else {
-          await strapi.documents("api::inventory.inventory").create({
-            data: {
-              product: { connect: [productId] },
-              warehouse: { connect: [warehouseId] },
-              quantity: Number(item.quantity)
-            }
-          });
-        }
-      }
-    }
-  } catch (err) {
-    console.error("❌ Stock Update Error:", err.message);
-  }
-}
-
-// --- حساب إجمالي الفاتورة ---
 async function calculatePurchaseTotals(event) {
   const { data, where } = event.params;
   try {
@@ -245,7 +241,6 @@ async function calculatePurchaseTotals(event) {
   }
 }
 
-// --- إرسال الإيميل ---
 async function sendPurchaseAdminNotification(purchase, actionTitle) {
   try {
     await strapi.plugins['email'].services.email.send({
